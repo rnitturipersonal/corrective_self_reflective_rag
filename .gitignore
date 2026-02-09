@@ -61,3 +61,11 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+
+
+notebooks/*
+notebooks/langchain/*
+test_features.py
+test_backends.py
+*.md

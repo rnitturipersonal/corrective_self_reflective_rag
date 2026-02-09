@@ -4,36 +4,62 @@ from app.core.retrieval import RetrievalService
 from app.services.crag import CRAGService
 from app.services.self_reflective import SelfReflectiveService
 from app.services.llm_service import LLMService
+from app.services.reranking import RerankingService
+from app.config import get_settings
 from loguru import logger
 import time
 
 router = APIRouter(prefix="/query", tags=["query"])
 
+settings = get_settings()
 retrieval_service = RetrievalService()
 crag_service = CRAGService()
 self_reflective_service = SelfReflectiveService()
 llm_service = LLMService()
+reranking_service = RerankingService()
 
 
 @router.post("/", response_model=QueryResponse)
 async def query_documents(request: QueryRequest):
     """Query documents with different RAG modes"""
-    
+
     start_time = time.time()
-    
+
+    hyde_hypotheses = None
+    initial_retrieval_count = None
+
     try:
-        # Retrieve chunks
+        # Determine initial top_k based on reranking flag
+        initial_top_k = request.top_k
+        if request.enable_reranking:
+            initial_top_k = settings.reranker_initial_top_k
+
+        # Stage 1: Retrieve (with optional HYDE)
         retrieved_chunks = retrieval_service.retrieve(
             query=request.query,
-            top_k=request.top_k
+            top_k=initial_top_k,
+            use_hyde=request.enable_hyde
         )
-        
+
+        initial_retrieval_count = len(retrieved_chunks)
+
+        if request.enable_hyde:
+            hyde_hypotheses = retrieval_service.get_last_hyde_hypotheses()
+
         if not retrieved_chunks:
             raise HTTPException(
                 status_code=404,
                 detail="No relevant documents found. Please upload documents first."
             )
-        
+
+        # Stage 2: Rerank (if enabled)
+        if request.enable_reranking:
+            retrieved_chunks = reranking_service.rerank(
+                query=request.query,
+                retrieved_chunks=retrieved_chunks,
+                top_k=request.top_k
+            )
+
         answer = None
         crag_details = None
         reflection_details = None
@@ -86,7 +112,7 @@ async def query_documents(request: QueryRequest):
             retrieved_chunks = sr_result.retrieved_chunks
         
         response_time = (time.time() - start_time) * 1000
-        
+
         return QueryResponse(
             query=request.query,
             answer=answer,
@@ -94,7 +120,11 @@ async def query_documents(request: QueryRequest):
             sources=retrieved_chunks,
             crag_details=crag_details,
             reflection_details=reflection_details,
-            response_time_ms=response_time
+            response_time_ms=response_time,
+            hyde_used=request.enable_hyde,
+            hyde_hypotheses=hyde_hypotheses,
+            reranking_used=request.enable_reranking,
+            initial_retrieval_count=initial_retrieval_count
         )
         
     except Exception as e:

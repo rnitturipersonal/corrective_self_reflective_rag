@@ -9,6 +9,14 @@ class QueryRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=1000)
     mode: Literal["standard", "crag", "self_reflective", "both"] = "both"
     top_k: int = Field(default=5, ge=1, le=20)
+    enable_hyde: bool = Field(
+        default=False,
+        description="Use HYDE (Hypothetical Document Embeddings) for query expansion"
+    )
+    enable_reranking: bool = Field(
+        default=False,
+        description="Use cross-encoder reranking for improved precision"
+    )
 
 
 # ============= Response Models =============
@@ -96,3 +104,7 @@ class QueryResponse(BaseModel):
     crag_details: Optional[CRAGResult] = None
     reflection_details: Optional[SelfReflectiveResult] = None
     response_time_ms: float
+    hyde_used: bool = False
+    hyde_hypotheses: Optional[list[str]] = None
+    reranking_used: bool = False
+    initial_retrieval_count: Optional[int] = None

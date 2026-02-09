@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+from typing import Literal
 
 
 class Settings(BaseSettings):
@@ -29,7 +30,21 @@ class Settings(BaseSettings):
     
     # Retrieval
     top_k_results: int = 5
-    
+
+    # HYDE Settings
+    hyde_num_hypotheses: int = 3
+    hyde_enabled_by_default: bool = False
+
+    # Reranking Settings
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    reranker_initial_top_k: int = 20
+    reranking_enabled_by_default: bool = False
+
+    # Reranking Backend Selection
+    reranker_backend: Literal["local", "voyage"] = "local"
+    voyage_api_key: str | None = None
+    voyage_model: str = "rerank-2.5"
+
     # Upload
     upload_dir: str = "uploads"
     max_file_size: int = 50 * 1024 * 1024  # 50MB
