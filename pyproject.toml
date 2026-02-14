@@ -61,6 +61,11 @@ dev-dependencies = [
     "mypy>=1.11.0",
 ]
 
+[tool.uv.workspace]
+members = [
+    "cs-rag",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

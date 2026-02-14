@@ -4,11 +4,36 @@ from pathlib import Path
 from datetime import datetime
 from loguru import logger
 import tiktoken
-
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions, EasyOcrOptions,TableStructureOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
 class DocumentProcessor:
     def __init__(self):
-        self.converter = DocumentConverter()
+        
+        # Following code will update OCR system for Docling @ 
+        #https://docling-project.github.io/docling/examples/full_page_ocr/
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.do_ocr = True
+        pipeline_options.ocr_options = EasyOcrOptions(
+        lang=["en"],  # add languages as needed
+        )
+        
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.do_ocr = True
+        pipeline_options.do_table_structure = True
+        pipeline_options.table_structure_options = TableStructureOptions(
+        do_cell_matching=True
+        
+        )
+        self.converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+        }
+        )
+        
+        # Default Docling implementation with RapidOCR
+        # self.converter = DocumentConverter()
         self.chunker = HybridChunker()
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
     
