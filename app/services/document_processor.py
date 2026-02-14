@@ -93,7 +93,8 @@ class DocumentProcessor:
                 first_item = chunk.meta.doc_items[0]
                 metadata["doc_item_type"] = first_item.label
                 if hasattr(first_item, 'prov') and first_item.prov:
-                    metadata["page_number"] = first_item.prov[0].get('page', None)
+                    # ProvenanceItem has page_no attribute (not page)
+                    metadata["page_number"] = first_item.prov[0].page_no
         
         return metadata
     

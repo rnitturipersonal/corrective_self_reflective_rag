@@ -84,12 +84,13 @@ class VectorStore:
                 # Build Qdrant filter from conditions if needed
                 pass
             
-            results = self.client.search(
+            results = self.client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_vector,
+                query=query_vector,
+                query_filter=search_filter,
                 limit=top_k,
-                query_filter=search_filter
-            )
+                with_payload=True
+            ).points
             
             return [
                 {
